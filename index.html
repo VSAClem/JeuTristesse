@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attrape les larmes</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(to top, #a3c1ff, #dfefff);
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+  user-select: none; /* Empêche la sélection de texte */
+  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE/Edge */
+    }
+
+    #startScreen {
+      position: absolute;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(255, 255, 255, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    #startScreen h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+
+    #startScreen p {
+      font-size: 1.3rem;
+      max-width: 600px;
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    #startBtn {
+      padding: 15px 30px;
+      background: #ff70a6;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    #startBtn:hover {
+      background: #ff3c9d;
+    }
+
+    #game {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      top: 80px;
+      width: 200px;
+      height: auto;
+      transition: left 0.8s ease-in-out;
+    }
+
+    .cloud img {
+      width: 200px;
+      height: auto;
+    }
+
+    .drop {
+      position: absolute;
+      width: 20px;
+      height: 25px;
+      background: radial-gradient(circle at 30% 30%, #4a90e2, #0066cc);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      animation: fall 4s linear forwards;
+    }
+
+    @keyframes fall {
+      to { transform: translateY(100vh); opacity: 0; }
+    }
+
+    .bucket {
+      position: absolute;
+      bottom: 40px;
+      width: 100px;
+      height: 100px;
+      background: url('Sceau.png') no-repeat center/contain;
+      left: 50%;
+      transform: translateX(-50%);
+      cursor: grab;
+    }
+
+    @keyframes bounce {
+      0% { transform: translateX(-50%) translateY(0); }
+      30% { transform: translateX(-50%) translateY(-12px); }
+      60% { transform: translateX(-50%) translateY(4px); }
+      100% { transform: translateX(-50%) translateY(0); }
+    }
+
+    .bucket.bounce {
+      animation: bounce 0.4s ease;
+    }
+
+    .flower {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) scale(0);
+      width: 140px;
+      height: 180px;
+      background: none;
+      transition: transform 0.3s ease-out;
+    }
+
+    .flower::before {
+      content: '🌻';
+      font-size: 140px;
+      display: block;
+      text-align: center;
+      filter: drop-shadow(6px 6px 8px #555);
+      animation: bloom 1s ease-in-out forwards;
+    }
+
+    @keyframes bloom {
+      0% { transform: scale(0.8) rotate(-5deg); opacity: 0.5; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .message {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2rem;
+      color: #333;
+      background: #ffffffdd;
+      padding: 20px;
+      border-radius: 20px;
+      display: none;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: fadeIn 1s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translate(-50%, -60%); }
+      to { opacity: 1; transform: translate(-50%, -50%); }
+    }
+  </style>
+</head>
+<body>
+  <div id="startScreen">
+    <h1>😢 Attrape les larmes !</h1>
+    <p>
+      Le nuage est triste...<br>
+      Attrape ses larmes pour l'aider à faire pousser une belle fleur !
+    </p>
+    <button id="startBtn">Commencer le jeu</button>
+  </div>
+
+  <div id="game" style="display:none">
+    <div class="cloud"><img id="cloudImg" src="Nuages triste.png" alt="nuage triste" /></div>
+    <div class="bucket" id="bucket"></div>
+    <div class="flower" id="flower"></div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <audio id="music" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2023/03/30/audio_49d7b6dbab.mp3?filename=sad-ambient-piano-143990.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const bucket = document.getElementById('bucket');
+    const flower = document.getElementById('flower');
+    const message = document.getElementById('message');
+    const music = document.getElementById('music');
+    const cloudImg = document.getElementById('cloudImg');
+    const cloud = document.querySelector('.cloud');
+
+    const startScreen = document.getElementById('startScreen');
+    const gameContainer = document.getElementById('game');
+    const startBtn = document.getElementById('startBtn');
+
+    let score = 0;
+    let missed = 0;
+    let musicVolume = 1;
+    let gameOver = false;
+    let gameInterval;
+
+    startBtn.addEventListener('click', () => {
+      startScreen.style.display = 'none';
+      gameContainer.style.display = 'block';
+      music.volume = musicVolume;
+      music.play();
+      gameOver = false;
+      score = 0;
+      missed = 0;
+      message.style.display = 'none';
+      cloudImg.src = 'Nuages triste.png';
+      cloud.style.transform = 'none';
+      flower.style.transform = 'translateX(-50%) scale(0)';
+      gameInterval = setInterval(createDrop, 1000);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      const x = e.clientX;
+      bucket.style.left = `${x}px`;
+    });
+
+    function createDrop() {
+      if (gameOver) return;
+
+      const margin = 120;
+      const randomX = Math.random() * (window.innerWidth - margin * 2) + margin;
+      cloud.style.left = `${randomX - 100}px`; // Bouge le nuage
+
+      // Attends que le nuage soit en place
+      setTimeout(() => {
+        if (gameOver) return;
+
+        const drop = document.createElement('div');
+        drop.classList.add('drop');
+        drop.style.left = `${randomX}px`;
+        drop.style.top = `120px`;
+        document.getElementById('game').appendChild(drop);
+
+        const dropInterval = setInterval(() => {
+          const dropRect = drop.getBoundingClientRect();
+          const bucketRect = bucket.getBoundingClientRect();
+
+          if (
+            dropRect.bottom >= bucketRect.top &&
+            dropRect.left < bucketRect.right &&
+            dropRect.right > bucketRect.left
+          ) {
+            drop.remove();
+            clearInterval(dropInterval);
+            onCatch();
+          } else if (dropRect.top > window.innerHeight) {
+            drop.remove();
+            clearInterval(dropInterval);
+            onMiss();
+          }
+        }, 30);
+      }, 850); // correspond à la transition CSS du nuage
+    }
+
+    function onCatch() {
+      score++;
+      flower.style.transform = `translateX(-50%) scale(${Math.min(1, score * 0.033)})`;
+      musicVolume = Math.max(0.2, musicVolume - 0.02);
+      music.volume = musicVolume;
+
+      // ➕ Rebond du seau
+      bucket.classList.add('bounce');
+      setTimeout(() => {
+        bucket.classList.remove('bounce');
+      }, 400);
+
+      if (score >= 30) {
+        endGame(true);
+      }
+    }
+
+    function onMiss() {
+      missed++;
+      if (missed >= 5) {
+        endGame(false);
+      }
+    }
+
+    function endGame(won) {
+      gameOver = true;
+      clearInterval(gameInterval);
+      if (won) {
+        cloudImg.src = 'Nuages heureux.png';
+        cloud.style.transition = 'transform 1.5s ease';
+        cloud.style.transform = 'scale(1.1) rotate(2deg)';
+        message.textContent = "Merci, grâce à toi je suis moins triste ! 😊";
+      } else {
+        message.textContent = "Oh non, trop de larmes sont tombées... 😢";
+      }
+      message.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
