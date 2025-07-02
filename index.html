@@ -93,7 +93,7 @@
       bottom: 40px;
       width: 100px;
       height: 100px;
-      background: url('Sceau.png') no-repeat center/contain;
+      background: url('sceau.png') no-repeat center/contain;
       left: 50%;
       transform: translateX(-50%);
       cursor: grab;
@@ -168,7 +168,7 @@
   </div>
 
   <div id="game" style="display:none">
-    <div class="cloud"><img id="cloudImg" src="Nuages triste.png" alt="nuage triste" /></div>
+    <div class="cloud"><img id="cloudImg" src="nuages triste.png" alt="nuage triste" /></div>
     <div class="bucket" id="bucket"></div>
     <div class="flower" id="flower"></div>
     <div class="message" id="message"></div>
@@ -282,7 +282,7 @@
       gameOver = true;
       clearInterval(gameInterval);
       if (won) {
-        cloudImg.src = 'Nuages heureux.png';
+        cloudImg.src = 'nuages heureux.png';
         cloud.style.transition = 'transform 1.5s ease';
         cloud.style.transform = 'scale(1.1) rotate(2deg)';
         message.textContent = "Merci, grâce à toi je suis moins triste ! 😊";
